@@ -8,6 +8,7 @@ import { DBOp, DBSetBlockOrHeader, DBSetTD, DBSetHashToNumber, DBSaveLookups } f
 import { DBTarget } from './db/operation'
 
 import type { LevelUp } from 'levelup'
+import { EventEmitter } from 'events'
 const level = require('level-mem')
 
 type OnBlock = (block: Block, reorg: boolean) => Promise<void> | void
@@ -92,7 +93,7 @@ export interface BlockchainOptions {
 /**
  * This class stores and interacts with blocks.
  */
-export default class Blockchain implements BlockchainInterface {
+export default class Blockchain extends EventEmitter implements BlockchainInterface {
   db: LevelUp
   dbManager: DBManager
 
@@ -125,6 +126,7 @@ export default class Blockchain implements BlockchainInterface {
    * [[BlockchainOptions]].
    */
   constructor(opts: BlockchainOptions = {}) {
+    super()
     // Throw on chain or hardfork options removed in latest major release to
     // prevent implicit chain setup on a wrong chain
     if ('chain' in opts || 'hardfork' in opts) {
@@ -515,6 +517,7 @@ export default class Blockchain implements BlockchainInterface {
       const ops = dbOps.concat(this._saveHeadOps())
       await this.dbManager.batch(ops)
     })
+    this.emit('updated')
   }
 
   /**
